@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    Int           @id @default(autoincrement())
+  name                  String
+  email                 String        @unique
+  senha                 String
+  role                  String
+  resetToken            String?
+  createdAt             DateTime      @default(now())
+  notificacoesRecebidas Notificacao[] @relation("NotificacoesRecebidas")
+  notificacoesEnviadas  Notificacao[] @relation("NotificacoesEnviadas")
+}
+
+model Lote {
+  id                Int             @id @default(autoincrement())
+  codigo            String
+  chegada           DateTime
+  custo             Float
+  gasto_alimentacao Float?
+  data_venda        DateTime?
+  vacinado          Boolean         @default(false)
+  data_vacinacao    DateTime?
+  bois              Boi[]
+  notificacoes      Notificacao[]
+  pesoHistorico     PesoHistorico[]
+  vendas            Venda[]
+}
+
+model Boi {
+  id           Int             @id @default(autoincrement())
+  peso         Float
+  status       String
+  alerta       String?
+  anotacoes    String?
+  loteId       Int
+  Lote         Lote            @relation(fields: [loteId], references: [id])
+  notificacoes Notificacao[]
+  historico    PesoHistorico[]
+
+  @@index([loteId], map: "Boi_loteId_fkey")
+}
+
+model PesoHistorico {
+  id          Int      @id @default(autoincrement())
+  peso        Float
+  dataPesagem DateTime @default(now())
+  boiId       Int
+  loteId      Int
+  Boi         Boi      @relation(fields: [boiId], references: [id])
+  Lote        Lote     @relation(fields: [loteId], references: [id])
+
+  @@index([boiId], map: "PesoHistorico_boiId_fkey")
+  @@index([loteId], map: "PesoHistorico_loteId_fkey")
+}
+
+model Venda {
+  id        Int      @id @default(autoincrement())
+  dataVenda DateTime @default(now())
+  valor     Float
+  loteId    Int
+  Lote      Lote     @relation(fields: [loteId], references: [id])
+
+  @@index([loteId], map: "Venda_loteId_fkey")
+}
+
+model Configuracao {
+  id           Int      @id @default(autoincrement())
+  chave        String   @unique
+  valor        String
+  atualizadoEm DateTime @default(now()) @updatedAt
+}
+
+model Notificacao {
+  id             Int           @id @default(autoincrement())
+  titulo         String
+  mensagem       String
+  lida           Boolean       @default(false)
+  tipo           String
+  remetenteId    Int
+  destinatarioId Int
+  loteId         Int?
+  boiId          Int?
+  respostaDeId   Int?
+  createdAt      DateTime      @default(now())
+  boi            Boi?          @relation(fields: [boiId], references: [id])
+  destinatario   User          @relation("NotificacoesRecebidas", fields: [destinatarioId], references: [id])
+  lote           Lote?         @relation(fields: [loteId], references: [id])
+  remetente      User          @relation("NotificacoesEnviadas", fields: [remetenteId], references: [id])
+  respostaDe     Notificacao?  @relation("RespostasNotificacao", fields: [respostaDeId], references: [id])
+  respostas      Notificacao[] @relation("RespostasNotificacao")
+
+  @@index([boiId], map: "Notificacao_boiId_fkey")
+  @@index([destinatarioId], map: "Notificacao_destinatarioId_fkey")
+  @@index([loteId], map: "Notificacao_loteId_fkey")
+  @@index([remetenteId], map: "Notificacao_remetenteId_fkey")
+  @@index([respostaDeId], map: "Notificacao_respostaDeId_fkey")
+}
