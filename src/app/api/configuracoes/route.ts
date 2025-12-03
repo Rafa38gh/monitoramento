@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { http_requests_total } from "../metrics/route";
 
 async function getPrisma() {
   const mod = await import("../../../generated/prisma");
@@ -61,8 +62,18 @@ export async function GET(req: NextRequest) {
       err.message?.includes("does not exist") ||
       err.message?.includes("Unknown table")
     ) {
+      http_requests_total.inc({
+        method: "GET",
+        route: "/api/configuracoes",
+        status_code: "200",
+      });
       return NextResponse.json({ chave: chave || null, valor: null });
     }
+    http_requests_total.inc({
+      method: "GET",
+      route: "/api/configuracoes",
+      status_code: "500",
+    });
     return NextResponse.json(
       {
         message: err?.message || "Erro no servidor",
@@ -82,6 +93,11 @@ export async function PUT(req: NextRequest) {
     const { chave, valor } = body;
 
     if (!chave || valor === undefined) {
+      http_requests_total.inc({
+        method: "PUT",
+        route: "/api/configuracoes",
+        status_code: "400",
+      });
       return NextResponse.json(
         { message: "chave e valor são obrigatórios" },
         { status: 400 }
@@ -96,6 +112,11 @@ export async function PUT(req: NextRequest) {
         create: { chave, valor: String(valor) },
       });
 
+      http_requests_total.inc({
+        method: "PUT",
+        route: "/api/configuracoes",
+        status_code: "200",
+      });
       return NextResponse.json(config, { status: 200 });
     } catch (dbError: any) {
       // Se a tabela não existe, retorna erro informativo
@@ -104,6 +125,11 @@ export async function PUT(req: NextRequest) {
         dbError.message?.includes("does not exist") ||
         dbError.message?.includes("Unknown table")
       ) {
+        http_requests_total.inc({
+          method: "PUT",
+          route: "/api/configuracoes",
+          status_code: "500",
+        });
         return NextResponse.json(
           {
             message:
@@ -117,6 +143,11 @@ export async function PUT(req: NextRequest) {
     }
   } catch (err: any) {
     console.error("API /api/configuracoes PUT error:", err);
+    http_requests_total.inc({
+      method: "GET",
+      route: "/api/configuracoes",
+      status_code: "500",
+    });
     return NextResponse.json(
       {
         message: err?.message || "Erro no servidor",

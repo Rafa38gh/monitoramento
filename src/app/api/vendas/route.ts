@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { http_requests_total } from "../metrics/route";
 
 function parseLocalDate(iso?: string | null): Date | null {
   if (!iso) return null;
-  const parts = iso.split('-').map(Number);
+  const parts = iso.split("-").map(Number);
   if (parts.length !== 3 || parts.some(isNaN)) return null;
   const [y, m, d] = parts;
   return new Date(y, m - 1, d); // cria no fuso local
@@ -16,7 +17,9 @@ export async function GET(req: NextRequest) {
     const { PrismaClient } = mod as { PrismaClient: any };
 
     // singleton para hot-reload em dev
-    const g = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
+    const g = globalThis as unknown as {
+      prisma?: InstanceType<typeof PrismaClient>;
+    };
     g.prisma = g.prisma || new PrismaClient();
     const prisma = g.prisma;
 
@@ -34,15 +37,15 @@ export async function GET(req: NextRequest) {
             data_vacinacao: true,
             _count: {
               select: {
-                bois: true
-              }
-            }
-          }
-        }
+                bois: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
-        dataVenda: 'desc'
-      }
+        dataVenda: "desc",
+      },
     });
 
     // Formatar resposta
@@ -52,7 +55,7 @@ export async function GET(req: NextRequest) {
       const loteGasto = Number(venda.Lote.gasto_alimentacao || 0);
       const custoTotal = loteCusto + loteGasto;
       const lucroCalc = valorNum - custoTotal;
-      const margem = custoTotal > 0 ? (lucroCalc / custoTotal * 100) : 0;
+      const margem = custoTotal > 0 ? (lucroCalc / custoTotal) * 100 : 0;
 
       return {
         id: venda.id,
@@ -66,17 +69,29 @@ export async function GET(req: NextRequest) {
           custo: loteCusto,
           gasto_alimentacao: loteGasto,
           vacinado: venda.Lote.vacinado,
-          quantidadeBois: venda.Lote._count.bois
+          quantidadeBois: venda.Lote._count.bois,
         },
         lucro: lucroCalc,
-        margemLucro: margem.toFixed(2)
+        margemLucro: margem.toFixed(2),
       };
     });
-
+    http_requests_total.inc({
+      method: "GET",
+      route: "/api/vendas",
+      status_code: "200",
+    });
     return NextResponse.json(vendasFormatadas, { status: 200 });
   } catch (err: any) {
     console.error("API /api/vendas GET error:", err);
-    return NextResponse.json({ message: err?.message || "Erro ao buscar vendas" }, { status: 500 });
+    http_requests_total.inc({
+      method: "GET",
+      route: "/api/vendas",
+      status_code: "500",
+    });
+    return NextResponse.json(
+      { message: err?.message || "Erro ao buscar vendas" },
+      { status: 500 }
+    );
   }
 }
 
@@ -87,7 +102,9 @@ export async function POST(req: NextRequest) {
     const { PrismaClient } = mod as { PrismaClient: any };
 
     // singleton para hot-reload em dev
-    const g = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
+    const g = globalThis as unknown as {
+      prisma?: InstanceType<typeof PrismaClient>;
+    };
     g.prisma = g.prisma || new PrismaClient();
     const prisma = g.prisma;
 
@@ -96,6 +113,11 @@ export async function POST(req: NextRequest) {
 
     // Validações
     if (!loteId || !valor) {
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/vendas",
+        status_code: "400",
+      });
       return NextResponse.json(
         { message: "Lote e valor são obrigatórios" },
         { status: 400 }
@@ -103,6 +125,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (valor <= 0) {
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/vendas",
+        status_code: "400",
+      });
       return NextResponse.json(
         { message: "Valor deve ser maior que zero" },
         { status: 400 }
@@ -115,13 +142,18 @@ export async function POST(req: NextRequest) {
       include: {
         _count: {
           select: {
-            bois: true
-          }
-        }
-      }
+            bois: true,
+          },
+        },
+      },
     });
 
     if (!loteExistente) {
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/vendas",
+        status_code: "404",
+      });
       return NextResponse.json(
         { message: "Lote não encontrado" },
         { status: 404 }
@@ -129,6 +161,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (loteExistente.data_venda) {
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/vendas",
+        status_code: "400",
+      });
       return NextResponse.json(
         { message: "Este lote já foi vendido" },
         { status: 400 }
@@ -140,24 +177,34 @@ export async function POST(req: NextRequest) {
     if (dataVenda) {
       const parsedDate = parseLocalDate(dataVenda);
       if (!parsedDate) {
+        http_requests_total.inc({
+          method: "POST",
+          route: "/api/vendas",
+          status_code: "400",
+        });
         return NextResponse.json(
           { message: "Data de venda inválida" },
           { status: 400 }
         );
       }
-      
+
       // Validar que a data não seja futura
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0); // Zerar horas para comparar apenas a data
       parsedDate.setHours(0, 0, 0, 0);
-      
+
       if (parsedDate > hoje) {
+        http_requests_total.inc({
+          method: "POST",
+          route: "/api/vendas",
+          status_code: "400",
+        });
         return NextResponse.json(
           { message: "Não é possível registrar venda com data futura" },
           { status: 400 }
         );
       }
-      
+
       dataVendaDate = parsedDate;
     } else {
       // Se não informou data, usa a data atual
@@ -170,22 +217,24 @@ export async function POST(req: NextRequest) {
       data: {
         loteId: parseInt(loteId),
         dataVenda: dataVendaDate,
-        valor: parseFloat(valor)
-      }
+        valor: parseFloat(valor),
+      },
     });
 
     // Atualizar data_venda do lote
     await prisma.lote.update({
       where: { id: parseInt(loteId) },
       data: {
-        data_venda: dataVendaDate
-      }
+        data_venda: dataVendaDate,
+      },
     });
 
     // Calcular custo total incluindo gasto de alimentação
-    const custoTotal = Number(loteExistente.custo || 0) + Number(loteExistente.gasto_alimentacao || 0);
+    const custoTotal =
+      Number(loteExistente.custo || 0) +
+      Number(loteExistente.gasto_alimentacao || 0);
     const lucroCalc = venda.valor - custoTotal;
-    const margemCalc = custoTotal > 0 ? (lucroCalc / custoTotal * 100) : 0;
+    const margemCalc = custoTotal > 0 ? (lucroCalc / custoTotal) * 100 : 0;
 
     // Retornar venda com informações completas
     const vendaComDetalhes = {
@@ -200,21 +249,31 @@ export async function POST(req: NextRequest) {
         custo: Number(loteExistente.custo || 0),
         gasto_alimentacao: Number(loteExistente.gasto_alimentacao || 0),
         vacinado: loteExistente.vacinado,
-        quantidadeBois: loteExistente._count.bois
+        quantidadeBois: loteExistente._count.bois,
       },
       lucro: lucroCalc,
-      margemLucro: margemCalc.toFixed(2)
+      margemLucro: margemCalc.toFixed(2),
     };
 
+    http_requests_total.inc({
+      method: "POST",
+      route: "/api/vendas",
+      status_code: "201",
+    });
     return NextResponse.json(
       {
         message: "Venda registrada com sucesso",
-        venda: vendaComDetalhes
+        venda: vendaComDetalhes,
       },
       { status: 201 }
     );
   } catch (err: any) {
     console.error("API /api/vendas POST error:", err);
+    http_requests_total.inc({
+      method: "POST",
+      route: "/api/vendas",
+      status_code: "500",
+    });
     return NextResponse.json(
       { message: err?.message || "Erro ao registrar venda" },
       { status: 500 }

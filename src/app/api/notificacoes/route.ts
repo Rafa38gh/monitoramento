@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import { http_requests_total } from "../metrics/route";
 
 async function getPrisma() {
   const mod = await import("../../../generated/prisma");
@@ -32,6 +33,11 @@ export async function GET(req: NextRequest) {
     const userId = await getUserIdFromToken(req);
 
     if (!userId) {
+      http_requests_total.inc({
+        method: "GET",
+        route: "/api/notificacoes",
+        status_code: "401",
+      });
       return NextResponse.json({ message: "Não autenticado" }, { status: 401 });
     }
 
@@ -204,6 +210,11 @@ export async function GET(req: NextRequest) {
       return false;
     });
 
+    http_requests_total.inc({
+      method: "GET",
+      route: "/api/notificacoes",
+      status_code: "200",
+    });
     return NextResponse.json(
       {
         notificacoes: notificacoesFiltradas,
@@ -213,6 +224,11 @@ export async function GET(req: NextRequest) {
     );
   } catch (err: any) {
     console.error("API /api/notificacoes GET error:", err);
+    http_requests_total.inc({
+      method: "GET",
+      route: "/api/notificacoes",
+      status_code: "500",
+    });
     return NextResponse.json(
       { message: err?.message || "Erro no servidor" },
       { status: 500 }
@@ -227,6 +243,11 @@ export async function POST(req: NextRequest) {
     const remetenteId = await getUserIdFromToken(req);
 
     if (!remetenteId) {
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/notificacoes",
+        status_code: "401",
+      });
       return NextResponse.json({ message: "Não autenticado" }, { status: 401 });
     }
 
@@ -242,6 +263,11 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!titulo || !mensagem) {
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/notificacoes",
+        status_code: "400",
+      });
       return NextResponse.json(
         { message: "Título e mensagem são obrigatórios" },
         { status: 400 }
@@ -273,6 +299,11 @@ export async function POST(req: NextRequest) {
       });
 
       if (!notificacaoOriginal) {
+        http_requests_total.inc({
+          method: "POST",
+          route: "/api/notificacoes",
+          status_code: "404",
+        });
         return NextResponse.json(
           { message: "Notificação original não encontrada" },
           { status: 404 }
@@ -290,6 +321,11 @@ export async function POST(req: NextRequest) {
 
     // Validar destinatário
     if (!destinatarioIdNum || isNaN(destinatarioIdNum)) {
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/notificacoes",
+        status_code: "400",
+      });
       return NextResponse.json(
         { message: "ID do destinatário inválido" },
         { status: 400 }
@@ -302,6 +338,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!destinatario) {
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/notificacoes",
+        status_code: "404",
+      });
       return NextResponse.json(
         { message: "Destinatário não encontrado" },
         { status: 404 }
@@ -340,7 +381,11 @@ export async function POST(req: NextRequest) {
         },
       },
     });
-
+    http_requests_total.inc({
+      method: "POST",
+      route: "/api/notificacoes",
+      status_code: "201",
+    });
     return NextResponse.json(notificacao, { status: 201 });
   } catch (err: any) {
     console.error("API /api/notificacoes POST error:", err);
@@ -357,6 +402,11 @@ export async function POST(req: NextRequest) {
       errorMessage = err.message;
     }
 
+    http_requests_total.inc({
+      method: "POST",
+      route: "/api/notificacoes",
+      status_code: "500",
+    });
     return NextResponse.json(
       { message: errorMessage, error: err?.code || "UNKNOWN" },
       { status: 500 }
