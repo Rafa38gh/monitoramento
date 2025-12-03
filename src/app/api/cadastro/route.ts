@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
+import {
+  authUserSuccess,
+  authUserError,
+  http_requests_total,
+} from "../metrics/route";
 // import bcrypt from "bcryptjs"; // manter comentado por enquanto
 
 export async function POST(req: NextRequest) {
@@ -10,7 +15,9 @@ export async function POST(req: NextRequest) {
     const { PrismaClient } = mod as { PrismaClient: any };
 
     // singleton para hot-reload em dev
-    const g = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
+    const g = globalThis as unknown as {
+      prisma?: InstanceType<typeof PrismaClient>;
+    };
     g.prisma = g.prisma || new PrismaClient();
     const prisma = g.prisma;
 
@@ -18,18 +25,52 @@ export async function POST(req: NextRequest) {
     const { isLogin, name, email, password, role } = body || {};
 
     if (!email || !password) {
-      return NextResponse.json({ message: "email e senha são obrigatórios" }, { status: 400 });
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/cadastro",
+        status_code: "400",
+      });
+      return NextResponse.json(
+        { message: "email e senha são obrigatórios" },
+        { status: 400 }
+      );
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
 
     if (isLogin) {
-      const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-      if (!user) return NextResponse.json({ message: "Usuário não encontrado" }, { status: 401 });
+      const user = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+      });
+      if (!user) {
+        authUserError.inc({
+          method: "POST",
+          route: "/api/cadastro",
+          status_code: "401",
+        });
+        http_requests_total.inc({
+          method: "POST",
+          route: "/api/cadastro",
+          status_code: "401",
+        });
+        return NextResponse.json(
+          { message: "Usuário não encontrado" },
+          { status: 401 }
+        );
+      }
 
       const match = user.senha === password; // ainda em texto plano (só dev)
-      if (!match) return NextResponse.json({ message: "Senha incorreta" }, { status: 401 });
-
+      if (!match) {
+        http_requests_total.inc({
+          method: "POST",
+          route: "/api/cadastro",
+          status_code: "401",
+        });
+        return NextResponse.json(
+          { message: "Senha incorreta" },
+          { status: 401 }
+        );
+      }
       // gera token JWT
       const token = jwt.sign(
         { id: user.id, email: user.email, role: user.role },
@@ -51,18 +92,38 @@ export async function POST(req: NextRequest) {
         secure: process.env.NODE_ENV === "production",
         maxAge: 2 * 60 * 60, // 2h
       });
-
+      authUserSuccess.inc({
+        method: "POST",
+        route: "/api/cadastro",
+        status_code: "200",
+      });
       return response;
     }
 
-
     // cadastro
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/cadastro",
+        status_code: "400",
+      });
       return NextResponse.json({ message: "E-mail inválido" }, { status: 400 });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (existing) return NextResponse.json({ message: "E-mail já cadastrado" }, { status: 409 });
+    const existing = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+    if (existing) {
+      http_requests_total.inc({
+        method: "POST",
+        route: "/api/cadastro",
+        status_code: "409",
+      });
+      return NextResponse.json(
+        { message: "E-mail já cadastrado" },
+        { status: 409 }
+      );
+    }
 
     const user = await prisma.user.create({
       data: {
@@ -73,10 +134,25 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true },
     });
-
-    return NextResponse.json({ message: "Usuário criado", userId: user.id }, { status: 201 });
+    http_requests_total.inc({
+      method: "POST",
+      route: "/api/cadastro",
+      status_code: "201",
+    });
+    return NextResponse.json(
+      { message: "Usuário criado", userId: user.id },
+      { status: 201 }
+    );
   } catch (err: any) {
     console.error("API /api/cadastro error:", err);
-    return NextResponse.json({ message: err?.message || "Erro no servidor" }, { status: 500 });
+    http_requests_total.inc({
+      method: "POST",
+      route: "/api/cadastro",
+      status_code: "500",
+    });
+    return NextResponse.json(
+      { message: err?.message || "Erro no servidor" },
+      { status: 500 }
+    );
   }
 }

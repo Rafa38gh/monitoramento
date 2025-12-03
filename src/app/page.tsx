@@ -25,12 +25,15 @@ export default function PastoSmartAuth() {
   });
   const [loading, setLoading] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  const isValidEmail = (v: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,13 +67,15 @@ export default function PastoSmartAuth() {
       };
 
       const res = await fetch("/api/cadastro", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(payload),
-    });
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
 
-      const body = await res.json().catch(() => ({ message: res.statusText || "Erro" }));
+      const body = await res
+        .json()
+        .catch(() => ({ message: res.statusText || "Erro" }));
 
       if (!res.ok) {
         alert("Erro: " + (body.message || "Resposta do servidor não OK"));
@@ -96,9 +101,9 @@ export default function PastoSmartAuth() {
 
       // login: redirecionar baseado no tipo de usuário
       alert("Login realizado.");
-      if (body.userRole === 'admin') {
+      if (body.userRole === "admin") {
         router.push("/adm");
-      } else if (body.userRole === 'peao') {
+      } else if (body.userRole === "peao") {
         router.push("/peao");
       } else {
         router.push("/adm"); // fallback
@@ -139,13 +144,17 @@ export default function PastoSmartAuth() {
           <div className="p-12 flex flex-col justify-center">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-green-700 text-center mb-2">
-                {isLogin ? "Seja bem vindo ao PastoSmart!" : "Crie sua conta no PastoSmart!"}
+                {isLogin
+                  ? "Seja bem vindo ao PastoSmart!"
+                  : "Crie sua conta no PastoSmart!"}
               </h2>
             </div>
 
             <div className="mb-8">
               <h3 className="text-lg text-black text-center mb-6">
-                {isLogin ? "Efetue seu login" : "Preencha os dados para se cadastrar"}
+                {isLogin
+                  ? "Efetue seu login"
+                  : "Preencha os dados para se cadastrar"}
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -244,11 +253,17 @@ export default function PastoSmartAuth() {
                     </button>
 
                     <div className="mt-6 pt-6 border-t border-gray-200">
-                      <p className="text-black mb-2">Ainda não tem uma conta?</p>
+                      <p className="text-black mb-2">
+                        Ainda não tem uma conta?
+                      </p>
                       <button
                         onClick={() => {
                           setIsLogin(false);
-                          setFormData((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+                          setFormData((prev) => ({
+                            ...prev,
+                            password: "",
+                            confirmPassword: "",
+                          }));
                         }}
                         className="text-green-600 hover:text-green-700 font-bold text-lg"
                       >
@@ -262,7 +277,11 @@ export default function PastoSmartAuth() {
                     <button
                       onClick={() => {
                         setIsLogin(true);
-                        setFormData((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+                        setFormData((prev) => ({
+                          ...prev,
+                          password: "",
+                          confirmPassword: "",
+                        }));
                       }}
                       className="text-green-600 hover:text-green-700 font-bold text-lg"
                     >
