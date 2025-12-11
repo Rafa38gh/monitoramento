@@ -10,7 +10,7 @@ processors:
 exporters:
   zipkin:
     endpoint: "http://jaeger:9411/api/v2/spans"
-  
+
   debug:
     verbosity: detailed
 

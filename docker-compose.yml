@@ -82,10 +82,10 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
     restart: unless-stopped
-  
+
   jaeger:
     image: jaegertracing/all-in-one:1.58
     container_name: jaeger
@@ -94,7 +94,7 @@ services:
     ports:
       - "16686:16686" # Jaeger UI
       - "14250:14250" # gRPC Ingest
-      - "9411:9411"   # Zipkin HTTP Ingest
+      - "9411:9411" # Zipkin HTTP Ingest
     restart: unless-stopped
 
 volumes:

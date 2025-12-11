@@ -1,10 +1,18 @@
 const { NodeSDK } = require("@opentelemetry/sdk-node");
-const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
-const { OTLPMetricExporter } = require("@opentelemetry/exporter-metrics-otlp-http");
+const {
+  OTLPTraceExporter,
+} = require("@opentelemetry/exporter-trace-otlp-http");
+const {
+  OTLPMetricExporter,
+} = require("@opentelemetry/exporter-metrics-otlp-http");
 const { PeriodicExportingMetricReader } = require("@opentelemetry/sdk-metrics");
-const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
+const {
+  getNodeAutoInstrumentations,
+} = require("@opentelemetry/auto-instrumentations-node");
 const { Resource } = require("@opentelemetry/resources");
-const { SemanticResourceAttributes } = require("@opentelemetry/semantic-conventions");
+const {
+  SemanticResourceAttributes,
+} = require("@opentelemetry/semantic-conventions");
 
 const sdk = new NodeSDK({
   resource: new Resource({
