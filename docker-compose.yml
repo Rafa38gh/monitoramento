@@ -32,6 +32,7 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
       - "--web.console.libraries=/etc/prometheus/console_libraries"
       - "--web.console.templates=/etc/prometheus/consoles"
       - "--web.enable-lifecycle"
@@ -40,7 +41,7 @@ services:
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
-  
+
   promtail:
     image: grafana/promtail:2.9.0
     container_name: promtail
@@ -50,7 +51,7 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
-  
+
   loki:
     image: grafana/loki:2.9.0
     container_name: loki
@@ -61,8 +62,6 @@ services:
       - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
     restart: unless-stopped
 
-
-  
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -75,12 +74,6 @@ services:
       - prometheus
       - loki
     restart: unless-stopped
-
-  grafana:
-    image: grafana/grafana-oss:latest
-    container_name: grafana
-    ports:
-      - "3200:3000"
 
 volumes:
   mysql_data:

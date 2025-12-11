@@ -30,6 +30,24 @@ const http_requests_total = new client.Counter({
 });
 register.registerMetric(http_requests_total);
 
+const userOnlineGauge = new client.Gauge({
+  name: "user_online_gauge",
+  help: "Number of users currently online",
+  registers: [register],
+});
+register.registerMetric(userOnlineGauge);
+
+const http_request_duration_seconds = new client.Histogram({
+  name: "http_request_duration_seconds",
+  help: "Duration of HTTP requests in seconds",
+  labelNames: ["code"],
+  registers: [register],
+});
+http_request_duration_seconds.labels("200").observe(0.4);
+http_request_duration_seconds.labels("401").observe(0.6);
+http_request_duration_seconds.labels("500").observe(1.2);
+register.registerMetric(http_request_duration_seconds);
+
 // const http_requests_total = new client.Histogram({
 //   name: "http_request_duration_seconds",
 //   help: "Duration of HTTP requests in seconds",
@@ -63,4 +81,10 @@ export async function GET() {
   }
 }
 
-export { authUserSuccess, authUserError, http_requests_total };
+export {
+  authUserSuccess,
+  authUserError,
+  http_requests_total,
+  userOnlineGauge,
+  http_request_duration_seconds,
+};

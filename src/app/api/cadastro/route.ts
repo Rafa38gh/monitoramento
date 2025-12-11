@@ -5,6 +5,8 @@ import {
   authUserSuccess,
   authUserError,
   http_requests_total,
+  userOnlineGauge,
+  http_request_duration_seconds,
 } from "../metrics/route";
 // import bcrypt from "bcryptjs"; // manter comentado por enquanto
 
@@ -43,6 +45,12 @@ export async function POST(req: NextRequest) {
         where: { email: normalizedEmail },
       });
       if (!user) {
+        http_request_duration_seconds.observe(
+          {
+            code: "401",
+          },
+          0.6
+        );
         authUserError.inc({
           method: "POST",
           route: "/api/cadastro",
@@ -66,6 +74,12 @@ export async function POST(req: NextRequest) {
           route: "/api/cadastro",
           status_code: "401",
         });
+        http_request_duration_seconds.observe(
+          {
+            code: "401",
+          },
+          0.6
+        );
         return NextResponse.json(
           { message: "Senha incorreta" },
           { status: 401 }
@@ -92,6 +106,13 @@ export async function POST(req: NextRequest) {
         secure: process.env.NODE_ENV === "production",
         maxAge: 2 * 60 * 60, // 2h
       });
+      http_request_duration_seconds.observe(
+        {
+          code: "200",
+        },
+        0.4
+      );
+      userOnlineGauge.inc(); // incrementa o número de usuários online
       authUserSuccess.inc({
         method: "POST",
         route: "/api/cadastro",
@@ -144,6 +165,12 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (err: any) {
+    http_request_duration_seconds.observe(
+      {
+        code: "500",
+      },
+      1.2
+    );
     console.error("API /api/cadastro error:", err);
     http_requests_total.inc({
       method: "POST",
