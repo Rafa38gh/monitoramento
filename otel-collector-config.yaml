@@ -8,14 +8,11 @@ processors:
   batch:
 
 exporters:
-  logging:
-    loglevel: info
-
-  # Quando instalar Jaeger:
-  jaeger:
-    endpoint: jaeger:14250
-    tls:
-      insecure: true
+  zipkin:
+    endpoint: "http://jaeger:9411/api/v2/spans"
+  
+  debug:
+    verbosity: detailed
 
   # Exporta métricas usando o formato Prometheus
   prometheus:
@@ -26,7 +23,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging]   # Troque para [jaeger] quando instalar o Jaeger
+      exporters: [zipkin, debug]
 
     metrics:
       receivers: [otlp]

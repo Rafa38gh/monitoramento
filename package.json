@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start"
+    "dev": "node --require ./instrumentation.js node_modules/.bin/next dev",
+    "start": "node --require ./instrumentation.js node_modules/.bin/next start",
+    "build": "next build"
   },
   "dependencies": {
     "@opentelemetry/auto-instrumentations-node": "^0.67.2",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.208.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.208.0",
-    "@opentelemetry/resources": "^2.2.0",
     "@opentelemetry/sdk-node": "^0.208.0",
     "@opentelemetry/semantic-conventions": "^1.38.0",
     "@prisma/client": "^6.19.0",
