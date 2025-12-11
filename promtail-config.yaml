@@ -14,4 +14,11 @@ scrape_configs:
       - targets: [localhost]
         labels:
           job: docker-logs
+          app: loki                     # label fixa para o dashboard da comunidade
           __path__: /var/lib/docker/containers/*/*-json.log
+
+    pipeline_stages:
+      - docker: {}                     # converte logs do formato Docker JSON
+      - logfmt: {}                      # interpreta logs no formato key=value
+      - labels:
+          level: ""                     # transforma 'level' em label do Loki
