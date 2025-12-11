@@ -1,0 +1,34 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+
+exporters:
+  logging:
+    loglevel: info
+
+  # Quando instalar Jaeger:
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+  # Exporta métricas usando o formato Prometheus
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]   # Troque para [jaeger] quando instalar o Jaeger
+
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
