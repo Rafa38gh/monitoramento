@@ -73,6 +73,30 @@ services:
       - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
     restart: unless-stopped
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    environment:
+      - no_proxy=jaeger,localhost,127.0.0.1
+      - NO_PROXY=jaeger,localhost,127.0.0.1
+
+    ports:
+      - "4318:4318"   # OTLP HTTP
+    depends_on:
+      - jaeger
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/jaeger:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686" # UI
+      - "4317:4317"   # OTLP gRPC
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana

@@ -1,0 +1,17 @@
+storage:
+  type: badger
+
+badger:
+  ephemeral: true
+
+service:
+  pipelines:
+    traces:
+      receivers:
+        otlp:
+          protocols:
+            http:
+              endpoint: 0.0.0.0:4318
+      exporters:
+        storage: {}
+
