@@ -10,15 +10,53 @@ clients:
 
 scrape_configs:
   - job_name: docker
-    static_configs:
-      - targets: [localhost]
-        labels:
-          job: docker-logs
-          app: loki                     # label fixa para o dashboard da comunidade
-          __path__: /var/lib/docker/containers/*/*-json.log
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+
+    relabel_configs:
+      # Pod = container
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: pod
+
+      # Mantém também container
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: container
+
+      # Namespace
+      - target_label: namespace
+        replacement: docker
+
+      # App
+      - source_labels: ['__meta_docker_container_name']
+        target_label: app
+
+      # Image
+      - source_labels: ['__meta_docker_container_image']
+        target_label: image
+
+      # Stream (stdout/stderr)
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: stream
 
     pipeline_stages:
-      - docker: {}                     # converte logs do formato Docker JSON
-      - logfmt: {}                      # interpreta logs no formato key=value
+      - docker: {}
+
+      - json:
+          expressions:
+            level: level
+            msg: message
+          drop_malformed: false
+
+      - logfmt:
+          mapping:
+            level: level
+
+      - template:
+          source: level
+          template: '{{ ToLower .Value }}'
+
       - labels:
-          level: ""                     # transforma 'level' em label do Loki
+          level:

@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   mysql:
     image: mysql:8.0
@@ -43,7 +41,7 @@ services:
       - "host.docker.internal:host-gateway"
   
   # Métricas para o Prometheus
-  node-exporter:
+  node-exporter:                      # Métricas do SO (uso de CPU, memória, disco, etc.)
     image: prom/node-exporter:latest
     container_name: node-exporter
     command:
@@ -55,8 +53,9 @@ services:
     restart: unless-stopped
 
   promtail:
-    image: grafana/promtail:2.9.0
+    image: grafana/promtail:latest
     container_name: promtail
+    user: root
     command: -config.file=/etc/promtail/config.yml
     volumes:
       - ./promtail-config.yaml:/etc/promtail/config.yml
