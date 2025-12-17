@@ -52,6 +52,16 @@ services:
       - '/:/host:ro,rslave'
     restart: unless-stopped
 
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
+    restart: unless-stopped
+
   promtail:
     image: grafana/promtail:latest
     container_name: promtail
@@ -61,16 +71,6 @@ services:
       - ./promtail-config.yaml:/etc/promtail/config.yml
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
-    restart: unless-stopped
-
-  loki:
-    image: grafana/loki:2.9.0
-    container_name: loki
-    command: -config.file=/etc/loki/local-config.yaml
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
     restart: unless-stopped
 
   otel-collector:
