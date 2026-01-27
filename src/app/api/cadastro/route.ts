@@ -7,7 +7,7 @@ import {
   http_requests_total,
   userOnlineGauge,
   http_request_duration_seconds,
-} from "../metrics/route";
+} from "../../../lib/metrics";
 // import bcrypt from "bcryptjs"; // manter comentado por enquanto
 
 export async function POST(req: NextRequest) {
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       if (!user) {
         http_request_duration_seconds.observe(
           {
-            code: "401",
+            status_code: "401",
           },
           0.6
         );
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
         });
         http_request_duration_seconds.observe(
           {
-            code: "401",
+            status_code: "401",
           },
           0.6
         );
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       });
       http_request_duration_seconds.observe(
         {
-          code: "200",
+          status_code: "200",
         },
         0.4
       );
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     http_request_duration_seconds.observe(
       {
-        code: "500",
+        status_code: "500",
       },
       1.2
     );

@@ -1,90 +1,30 @@
-import client, { collectDefaultMetrics, Registry } from "prom-client";
+// src/app/api/metrics/route.ts
 import { NextResponse } from "next/server";
-
-const register = new Registry();
-collectDefaultMetrics({ register });
-
-type RequestLabels = "method" | "route" | "status_code";
-
-const authUserSuccess = new client.Counter({
-  name: "auth_user_success_total",
-  help: "Total number of successful user authentications",
-  labelNames: ["method", "route", "status_code"],
-  registers: [register],
-});
-register.registerMetric(authUserSuccess);
-
-const authUserError = new client.Counter({
-  name: "auth_user_error_total",
-  help: "Total number of unccessful user authentications",
-  labelNames: ["method", "route", "status_code"],
-  registers: [register],
-});
-register.registerMetric(authUserError);
-
-const http_requests_total = new client.Counter({
-  name: "http_requests_total",
-  help: "Total number of HTTP requests",
-  labelNames: ["method", "route", "status_code"],
-  registers: [register],
-});
-register.registerMetric(http_requests_total);
-
-const userOnlineGauge = new client.Gauge({
-  name: "user_online_gauge",
-  help: "Number of users currently online",
-  registers: [register],
-});
-register.registerMetric(userOnlineGauge);
-
-const http_request_duration_seconds = new client.Histogram({
-  name: "http_request_duration_seconds",
-  help: "Duration of HTTP requests in seconds",
-  labelNames: ["code"],
-  registers: [register],
-});
-http_request_duration_seconds.labels("200").observe(0.4);
-http_request_duration_seconds.labels("401").observe(0.6);
-http_request_duration_seconds.labels("500").observe(1.2);
-register.registerMetric(http_request_duration_seconds);
-
-// const http_requests_total = new client.Histogram({
-//   name: "http_request_duration_seconds",
-//   help: "Duration of HTTP requests in seconds",
-//   buckets: [0.1, 0.5, 1, 2.5, 5, 10],
-// });
-
-//register.registerMetric(http_requests_total);
+import { register, http_requests_total } from "../../../lib/metrics";
 
 export async function GET() {
   try {
-    const metrics = await register.metrics();
     http_requests_total.inc({
       method: "GET",
       route: "/api/metrics",
       status_code: "200",
     });
-    return new NextResponse(metrics, {
+
+    return new NextResponse(await register.metrics(), {
       status: 200,
       headers: {
         "Content-Type": register.contentType,
-        "Cache-Control": "no-store, no-cache",
+        "Cache-Control": "no-store",
       },
     });
-  } catch (ex) {
+  } catch (err) {
     http_requests_total.inc({
       method: "GET",
       route: "/api/metrics",
       status_code: "500",
     });
-    return new NextResponse(String(ex), { status: 500 });
+
+    return new NextResponse("Metrics error", { status: 500 });
   }
 }
 
-export {
-  authUserSuccess,
-  authUserError,
-  http_requests_total,
-  userOnlineGauge,
-  http_request_duration_seconds,
-};

@@ -4,7 +4,15 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
+processors:
+  batch:
+
 exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    enable_open_metrics: true
+
+
   otlp:
     endpoint: jaeger:4317
     tls:
@@ -15,6 +23,12 @@ exporters:
 
 service:
   pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+
+
     traces:
       receivers: [otlp]
       exporters: [debug, otlp]

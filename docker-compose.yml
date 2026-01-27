@@ -16,13 +16,6 @@ services:
       retries: 5
     restart: unless-stopped
 
-  adminer:
-    image: adminer
-    container_name: adminer
-    ports:
-      - "8080:8080"
-    restart: unless-stopped
-
   prometheus:
     image: prom/prometheus
     container_name: prometheus
@@ -85,6 +78,7 @@ services:
 
     ports:
       - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Métricas
     depends_on:
       - jaeger
     restart: unless-stopped

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { userOnlineGauge } from "../metrics/route";
+import { userOnlineGauge } from "../../../lib/metrics";
 export async function POST(req: NextRequest) {
   console.log("📤 API Logout POST chamada");
 

@@ -50,10 +50,6 @@ scrape_configs:
             msg: message
           drop_malformed: false
 
-      - logfmt:
-          mapping:
-            level: level
-
       - template:
           source: level
           template: '{{ ToLower .Value }}'
